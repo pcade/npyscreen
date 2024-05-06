@@ -1,3 +1,13 @@
+#!/usr/bin/python3
+# ============================================================================
+# File Name: npyscreen_example.py
+# Author Name: Григорий Пахомов
+# Version: 0.1
+# Date: 06.05.2024
+# Description: Test of widgets in npyscreen
+# ============================================================================
+
+# Import libraries
 import npyscreen as nps
 from collections import namedtuple
 import curses
@@ -19,6 +29,7 @@ values_list = [
     "Enter text",
     "Inputed value"]
 
+# Dict of errors
 error_messages = {
     FileNotFoundError: "Указанная команда или исполняемый файл не найдены.",
     PermissionError: "У вас недостаточно прав для выполнения этой операции.",
@@ -32,6 +43,7 @@ class Menu(nps.FormBaseNew):
     def create(self):
         self.color = 'NO_EDIT'
 
+        # Create a select one menu with the given values
         self.option = self.add(
             nps.TitleSelectOne,
             name="Values\n",
@@ -44,8 +56,10 @@ class Menu(nps.FormBaseNew):
             max_width=36,
             max_height=10)
 
+        # Call on_option_selected method when a value is selected
         self.option.when_value_edited = self.on_option_selected
 
+        # Create a box to display for all widgets
         self.box = self.add(
             nps.BoxBasic,
             name="My Box",
@@ -55,7 +69,7 @@ class Menu(nps.FormBaseNew):
             height=20,
             editable=False)
 
-# Этот блок относится к - Статус - его наполнение
+        # Create a box to processbar widget
         self.box_processbar = self.add(
             nps.BoxBasic,
             name="Processbar",
@@ -66,6 +80,7 @@ class Menu(nps.FormBaseNew):
             max_width=37,
             editable=False)
 
+        # Create a processbar widget
         self.widget_processbar = self.add(
             ProcessBar,
             relx = (MIN_WIDTH - WIDTH) // 2 + 63,
@@ -75,8 +90,7 @@ class Menu(nps.FormBaseNew):
             max_width=33,
             editable=False)
 
-
-# Этот блок относится к - Статус ALSE - его наполнение
+        # Create a button to decrease the slider
         self.button_processbar_minus = self.add(
             nps.ButtonPress,
             name="-Progress",
@@ -88,8 +102,7 @@ class Menu(nps.FormBaseNew):
             scroll_exit=True,
             editable=True,)
 
-# Этот блок относится к - Статус ALSE - создание блока
-# в необходимом месте
+        # Create a box to processbar widget
         self.box_button_processbar_minus = self.add(
             nps.BoxBasic,
             name="",
@@ -100,7 +113,7 @@ class Menu(nps.FormBaseNew):
             max_width=13,
             editable=False)
 
-# Этот блок относится к - Статус ALSE - его наполнение
+        # Create a button to increase slider
         self.button_processbar_plus = self.add(
             nps.ButtonPress,
             name="+Progress",
@@ -112,6 +125,7 @@ class Menu(nps.FormBaseNew):
             scroll_exit=True,
             editable=True,)
 
+        # Create a button to open the file manager
         self.button_file_manager = self.add(
             nps.ButtonPress,
             name="File manager",
@@ -123,6 +137,7 @@ class Menu(nps.FormBaseNew):
             editable=True,
         )
 
+        # Create a button to show which file was selected
         self.button_file_selected = self.add(
             nps.ButtonPress,
             name="Selected file",
@@ -134,6 +149,7 @@ class Menu(nps.FormBaseNew):
             editable=True,
         )
 
+        # Create a button to open selected file
         self.button_open_file = self.add(
             nps.ButtonPress,
             name="Open file",

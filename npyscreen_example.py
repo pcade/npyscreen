@@ -1,67 +1,42 @@
 import npyscreen as nps
-import os
 from collections import namedtuple
-import subprocess
-import sys
-import signal
+import curses
 
 
-terminal_size = os.get_terminal_size()
-if terminal_size.lines < 20:
-    terminal_size = namedtuple('_TerminalSize', 'columns, lines')(terminal_size.columns, 20)
-if terminal_size.columns < 100:
-    terminal_size = namedtuple('_TerminalSize', 'columns, lines')(100, terminal_size.lines)
+# Minimum and maximum width and height for the application window
+MIN_WIDTH = 105
+MIN_HEIGHT = 35
 
+WIDTH = 100
+HEIGHT = 30
 
+MAX_WIDTH = 300
+MAX_HEIGHT = 300
+
+# List of values for the select one menu
 values_list = [
     "Message",
     "Enter text",
-    "Inputed value",
-    "Очистка"]
+    "Inputed value"]
 
-def get_console_size():
-    rows, cols = 24, 104  # Set default values
-
-    try:
-        result = subprocess.check_output(['stty', 'size'])
-        rows, cols = map(int, result.decode().split())
-    except (subprocess.CalledProcessError, FileNotFoundError):
-        pass
-
-    return max(rows, 24), max(cols, 104)
-
-def handle_resize(signum, frame):
-    if hasattr(sys, 'frozen'):  # running in a PyInstaller bundle
-        # Get the command-line arguments for the executable
-        args = [sys.executable] + sys.argv[1:]
-
-        # Restart the script using subprocess
-        subprocess.run(args, check=True)
-
-        # Exit the current process
-        sys.exit(0)
-    else:  # running in a normal Python environment
-        os.execv(sys.executable, ['python'] + sys.argv)
+error_messages = {
+    FileNotFoundError: "Указанная команда или исполняемый файл не найдены.",
+    PermissionError: "У вас недостаточно прав для выполнения этой операции.",
+    Exception: "Произошла непредвиденная ошибка: {}",
+}
 
 class Menu(nps.FormBaseNew):
     select_file = ""
     input_value = ""
 
-    def __init__(self, *args, **keywords):
-        super(Menu, self).__init__(*args, **keywords)
-        self.initializing = True
-
     def create(self):
-        y = self.parentApp.y
-        x = self.parentApp.x
         self.color = 'NO_EDIT'
 
-        
         self.option = self.add(
             nps.TitleSelectOne,
             name="Values\n",
-            relx = (x - 100) // 2 + 4,
-            rely = (y - 20) // 2 + 2,
+            relx = (MIN_WIDTH - WIDTH) // 2 + 4,
+            rely = (MIN_HEIGHT - HEIGHT) // 2 + 2,
             values=values_list,
             begin_entry_at=0,
             scroll_exit=True,
@@ -74,19 +49,18 @@ class Menu(nps.FormBaseNew):
         self.box = self.add(
             nps.BoxBasic,
             name="My Box",
-            relx=(x - 100) // 2,
-            rely=(y - 20) // 2,
+            relx=(MIN_WIDTH - WIDTH) // 2,
+            rely=(MIN_HEIGHT - HEIGHT) // 2,
             width=100,
             height=20,
             editable=False)
-
 
 # Этот блок относится к - Статус - его наполнение
         self.box_processbar = self.add(
             nps.BoxBasic,
             name="Processbar",
-            relx = (x - 100) // 2 + 61,
-            rely = (y - 20) // 2 + 1,
+            relx = (MIN_WIDTH - WIDTH) // 2 + 61,
+            rely = (MIN_HEIGHT - HEIGHT) // 2 + 1,
             color='CURSOR_INVERSE',
             max_height=5,
             max_width=37,
@@ -94,8 +68,8 @@ class Menu(nps.FormBaseNew):
 
         self.widget_processbar = self.add(
             ProcessBar,
-            relx = (x - 100) // 2 + 63,
-            rely = (y - 20) // 2 + 4,
+            relx = (MIN_WIDTH - WIDTH) // 2 + 63,
+            rely = (MIN_HEIGHT - HEIGHT) // 2 + 4,
             value=int(50),
             color='WARNING',
             max_width=33,
@@ -106,8 +80,8 @@ class Menu(nps.FormBaseNew):
         self.button_processbar_minus = self.add(
             nps.ButtonPress,
             name="-Progress",
-            relx = (x - 100) // 2 + 61,
-            rely = (y - 20) // 2 + 7,
+            relx = (MIN_WIDTH - WIDTH) // 2 + 61,
+            rely = (MIN_HEIGHT - HEIGHT) // 2 + 7,
             when_pressed_function=self.ButtonProcessbarMinus,
             color='DANGER',
             begin_entry_at=0,
@@ -119,8 +93,8 @@ class Menu(nps.FormBaseNew):
         self.box_button_processbar_minus = self.add(
             nps.BoxBasic,
             name="",
-            relx = (x - 100) // 2 + 75,
-            rely = (y - 20) // 2 + 6,
+            relx = (MIN_WIDTH - WIDTH) // 2 + 75,
+            rely = (MIN_HEIGHT - HEIGHT) // 2 + 6,
             color='CONTROL',
             max_height=3,
             max_width=13,
@@ -130,8 +104,8 @@ class Menu(nps.FormBaseNew):
         self.button_processbar_plus = self.add(
             nps.ButtonPress,
             name="+Progress",
-            relx = (x - 100) // 2 + 75,
-            rely = (y - 20) // 2 + 7,
+            relx = (MIN_WIDTH - WIDTH) // 2 + 75,
+            rely = (MIN_HEIGHT - HEIGHT) // 2 + 7,
             when_pressed_function=self.ButtonProcessbarPlus,
             color='GOOD',
             begin_entry_at=0,
@@ -141,8 +115,8 @@ class Menu(nps.FormBaseNew):
         self.button_file_manager = self.add(
             nps.ButtonPress,
             name="File manager",
-            relx = (x - 100) // 2 + 22,
-            rely = (y - 20) // 2 + 14,
+            relx = (MIN_WIDTH - WIDTH) // 2 + 22,
+            rely = (MIN_HEIGHT - HEIGHT) // 2 + 14,
             when_pressed_function=self.ButtonFileManager,
             begin_entry_at=0,
             scroll_exit=True,
@@ -152,8 +126,8 @@ class Menu(nps.FormBaseNew):
         self.button_file_selected = self.add(
             nps.ButtonPress,
             name="Selected file",
-            relx = (x - 100) // 2 + 40,
-            rely = (y - 20) // 2 + 14,
+            relx = (MIN_WIDTH - WIDTH) // 2 + 40,
+            rely = (MIN_HEIGHT - HEIGHT) // 2 + 14,
             when_pressed_function=self.ButtonFileSelected,
             begin_entry_at=0,
             scroll_exit=True,
@@ -163,8 +137,8 @@ class Menu(nps.FormBaseNew):
         self.button_open_file = self.add(
             nps.ButtonPress,
             name="Open file",
-            relx = (x - 100) // 2 + 60,
-            rely = (y - 20) // 2 + 14,
+            relx = (MIN_WIDTH - WIDTH) // 2 + 60,
+            rely = (MIN_HEIGHT - HEIGHT) // 2 + 14,
             when_pressed_function=lambda: self.ButtonFileOpen(Menu.select_file, 'Content'),
             begin_entry_at=0,
             scroll_exit=True,
@@ -174,58 +148,59 @@ class Menu(nps.FormBaseNew):
         self.button_exit = self.add(
             nps.ButtonPress,
             name="Exit",
-            relx = (x - 100) // 2 + 72,
-            rely = (y - 20) // 2 + 14,
+            relx = (MIN_WIDTH - WIDTH) // 2 + 72,
+            rely = (MIN_HEIGHT - HEIGHT) // 2 + 14,
             when_pressed_function=self.ButtonExit,
             begin_entry_at=0,
             scroll_exit=True,
             editable=True,
         )
 
-        self.display()
-        self.initializing = False
+    def resize(self):
+        super(Menu, self).resize()
+        maxy, maxx = curses.initscr().getmaxyx()
 
-    def resize(self, y=None, x=None):
-        if self.initializing:
+        if maxx < MIN_WIDTH or maxy < MIN_HEIGHT:
             return
-        if y is None or x is None:
-            y, x = get_console_size()
 
-        x, y = get_console_size()
-        self.box.relx = (x - 100) // 2
-        self.box.rely = (y - 20) // 2
+        if maxx > MAX_WIDTH or maxy > MAX_HEIGHT:
+            maxx, maxy = MAX_WIDTH, MAX_HEIGHT
 
-        self.option.relx = (x - 100) // 2 + 4
-        self.option.rely = (y - 20) // 2 + 2
+        self.box.relx = (maxx - WIDTH) // 2
+        self.box.rely = (maxy - HEIGHT) // 2
 
-        self.box_processbar.relx = (x - 100) // 2 + 61
-        self.box_processbar.rely = (y - 20) // 2 + 1
+        self.option.relx = (maxx - WIDTH) // 2 + 4
+        self.option.rely = (maxy - HEIGHT) // 2 + 2
 
-        self.widget_processbar.relx = (x - 100) // 2 + 63
-        self.widget_processbar.rely = (y - 20) // 2 + 4
 
-        self.button_processbar_minus.relx = (x - 100) // 2 + 61
-        self.button_processbar_minus.rely = (y - 20) // 2 + 7
+        self.box_processbar.relx = (maxx - WIDTH) // 2 + 61
+        self.box_processbar.rely = (maxy - HEIGHT) // 2 + 1
 
-        self.box_button_processbar_minus.relx = (x - 100) // 2 + 75
-        self.box_button_processbar_minus.rely = (y - 20) // 2 + 6
+        self.widget_processbar.relx = (maxx - WIDTH) // 2 + 63
+        self.widget_processbar.rely = (maxy - HEIGHT) // 2 + 4
 
-        self.button_processbar_plus.relx = (x - 100) // 2 + 75
-        self.button_processbar_plus.rely = (y - 20) // 2 + 7
+        self.button_processbar_minus.relx = (maxx - WIDTH) // 2 + 61
+        self.button_processbar_minus.rely = (maxy - HEIGHT) // 2 + 7
 
-        self.button_file_manager.relx = (x - 100) // 2 + 22
-        self.button_file_manager.rely = (y - 20) // 2 + 14
+        self.box_button_processbar_minus.relx = (maxx - WIDTH) // 2 + 75
+        self.box_button_processbar_minus.rely = (maxy - HEIGHT) // 2 + 6
 
-        self.button_file_selected.relx = (x - 100) // 2 + 40
-        self.button_file_selected.rely = (y - 20) // 2 + 14
+        self.button_processbar_plus.relx = (maxx - WIDTH) // 2 + 75
+        self.button_processbar_plus.rely = (maxy - HEIGHT) // 2 + 7
 
-        self.button_open_file.relx = (x - 100) // 2 + 60
-        self.button_open_file.rely = (y - 20) // 2 + 14
+        self.button_file_manager.relx = (maxx - WIDTH) // 2 + 22
+        self.button_file_manager.rely = (maxy - HEIGHT) // 2 + 14
 
-        self.button_exit.relx = (x - 100) // 2 + 72
-        self.button_exit.rely = (y - 20) // 2 + 14
+        self.button_file_selected.relx = (maxx - WIDTH) // 2 + 40
+        self.button_file_selected.rely = (maxy - HEIGHT) // 2 + 14
 
-        self.display()
+        self.button_open_file.relx = (maxx - WIDTH) // 2 + 60
+        self.button_open_file.rely = (maxy - HEIGHT) // 2 + 14
+
+        self.button_exit.relx = (maxx - WIDTH) // 2 + 72
+        self.button_exit.rely = (maxy - HEIGHT) // 2 + 14
+
+        super(Menu, self).resize()
 
     def ButtonProcessbarMinus(self):
         if self.widget_processbar.value == 00:
@@ -256,8 +231,8 @@ class Menu(nps.FormBaseNew):
                 'FILE_VIEWER',
                 AttentionForm,
                 name=name,
-                lines=terminal_size.lines,
-                columns=terminal_size.columns,
+                lines=HEIGHT-10,
+                columns=WIDTH,
                 scroll_exit=True,
                 editable=True,
                 text=file_content.read()
@@ -268,8 +243,8 @@ class Menu(nps.FormBaseNew):
                 'FILE_VIEWER',
                 AttentionForm,
                 name='Error',
-                lines=terminal_size.lines,
-                columns=terminal_size.columns,
+                lines=HEIGHT-10,
+                columns=WIDTH,
                 scroll_exit=True,
                 editable=True,
                 text="File not found."
@@ -308,7 +283,7 @@ class Menu(nps.FormBaseNew):
 
             if chosen_value == "Inputed value":
 
-                nps.notify_wait(f'Your file path: {Menu.input_value}', title='Example')
+                nps.notify_wait(f'Your msg: {Menu.input_value}', title='Example')
 
 class ProcessBar(nps.Slider):
     def __init__(self, *args, **keywords):
@@ -342,44 +317,35 @@ class AttentionForm(nps.ActionFormMinimal):
         super(AttentionForm, self).__init__(*args, **keywords)
     
     def create(self):
-        self.box = self.add(nps.BoxBasic,
-                            name="My Box",
-                            width=100,
-                            height=20,
-                            relx=(terminal_size.columns - 100) // 2,
-                            rely=(terminal_size.lines - 20) // 2,
-                            editable=False)
-    
         self.message = self.add(
             nps.Pager,
             values=self.text.split('\n'),
-            max_height=18,
-            max_width=96,
-            columns=90,
-            relx=(terminal_size.columns - 100) // 2 + 2,
-            rely=(terminal_size.lines - 20) // 2 + 1,
-            lines=10,
+            columns=20,
+            relx=2,
+            rely=1,
+            lines=90,
             scroll_exit=True,
             editable=True,
             name=self.name
         )
-
+    
     def on_ok(self):
         self.parentApp.switchFormPrevious()
 
 class App(nps.NPSAppManaged):
     def onStart(self):
-        y, x = get_console_size()
-        self.y = y
-        self.x = x
-        self.addForm('MAIN', Menu, name='', lines=y, columns=x)
-        self.addForm('FileManager', FileManager, name="", lines=y, columns=x)
+        self.addForm('MAIN', Menu, name='', columns=MAX_WIDTH, lines=MAX_HEIGHT, framed=False)
+        self.addForm('FileManager', FileManager, name="", columns=WIDTH, lines=HEIGHT- 10)
+
+
 
     def change_form(self, name):
         self.switchForm(name)
         self.resetHistory()
 
 if __name__ == "__main__":
-    signal.signal(signal.SIGWINCH, handle_resize)
-    app = App()
-    app.run()
+    try:
+        app = App()
+        app.run()
+    except tuple(error_messages.keys()) as e:
+        print(e)
